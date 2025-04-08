@@ -18,5 +18,16 @@ Additionally, the  visualization we seek to acheive is also targeting water engi
 Below is a video demonstration;
 https://youtu.be/Q4NB53KcXyw 
 
+# Technology Fabric and AI
+Does the solution usee multiple fabric features and workloads and leverage built in AI capabilities and those from Azure AI
 
+Fabric
+
+The workload that was used in Microsoft fabric was Real-Time Intelligence, which was used to provide  analytical solutions for real-time data streams relating  to external factors that affect water extraction from boreholes  such as high temperature and ground motion (earthquakes)
+
+The items types used were;
+Eventstream  that provides  a stream of events related to observations of water properties such as water levels, pressure and extent of salinity.
+Data Gen2  which is used for to ingest data such as inventory of equipment used for water extraction such as pumps.
+Microsoft Fabric Activator  that enables automated processing of events that trigger actions. For example, use of an  Activator to notify you by email when a value such as temperature  in an eventstream deviates from a specific range 
+![image](https://github.com/user-attachments/assets/987c97f1-ef77-4c7d-97c9-3e47e7266aef)
 
