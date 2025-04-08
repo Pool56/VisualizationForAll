@@ -1,0 +1,2 @@
+6.	We waited for a few seconds, and then refreshed the page until the status of the dataflow is Succeeded.
+7.	In the navigation pane, we selected the lakehouse. Then we expanded the Tables folder to verify that a table named equipment has been created and loaded by the dataflow.
