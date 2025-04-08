@@ -43,7 +43,7 @@ We also used Gpt model to aid in fabrication of braille learning material for wa
 Does the solution have real world relevance? Does it solve a clearly defined problem that could be beneficial to others?
 The solution does have a real world relevance as most companies rely on Internet of Things (IoT)  (which are devices that monitor various parameters such as pressure or extent of salinity in water) however most companies are unable to analyse such information so as to derive accurate insights.
 
-Our team has already reached out to companies that specialise in water management so as to evaluate the feasibility of the solution. The companies are; 
+Regarding determining of benefit our team has already reached out to companies that specialise in water management so as to evaluate the feasibility of the solution. The companies are; 
 
 1.Alma water
 
