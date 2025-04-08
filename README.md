@@ -28,13 +28,22 @@ The workload that was used in Microsoft fabric was Real-Time Intelligence, which
 The items types used were;
 Eventstream  that provides  a stream of events related to observations of water properties such as water levels, pressure and extent of salinity.
 Data Gen2  which is used for to ingest data such as inventory of equipment used for water extraction such as pumps.
-Microsoft Fabric Activator  that enables automated processing of events that trigger actions. For example, use of an  Activator to notify you by email when a value such as temperature  in an eventstream deviates from a specific range 
+Microsoft Fabric Activator  that enables automated processing of events that trigger actions. For example, use of an  Activator to notify you by email when a value such as temperature  in an eventstream deviates from a specific range.
+
+Below is a link describing how we used Microsoft fabric;
+https://docs.google.com/document/d/1wszqtS9fodXCpBjFBzesDxaMAN_IYfsm/edit?usp=sharing&ouid=115192565142409982962&rtpof=true&sd=true
 
 Use of AI
 
 The AI used is the Azure AI proxy playground  which comprise of;
 DALL·E playground that was used to generate revised prompts 
+Below are links of documents that illustrate how DALL-E-Playground was used;
+https://drive.google.com/file/d/1KiEtQ_rS3asNua6qjxeVET7DrvpQ7Qjo/view?usp=sharing
+https://drive.google.com/file/d/1PGbdhzFXoV2jKtFQ-FE5Kc5G22gBJLKe/view?usp=sharing
+
 Gpt  models which were used to illustrate how to use workloads and item types in Microsoft fabric
+https://docs.google.com/document/d/1dUcu80sCvpVxI0mM4A6t4p5i_fw-G-wl/edit?usp=sharing&ouid=115192565142409982962&rtpof=true&sd=true
+
 Github copilot for Azure which is used for generation of code used for analyzing equipment used by water engineers.
 We also used Gpt model to aid in fabrication of braille learning material for water engineers who could be partially or fully visually impaired. The Gpt assisted in determining dimensions of texts and other illustrative graphics.
 
