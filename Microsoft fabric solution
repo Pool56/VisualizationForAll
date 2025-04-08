@@ -1,2 +1,353 @@
+                     Ingest real-time data from IoT sensors with Eventstream in Microsoft Fabric
+Introduction
+Eventstream is a feature in Microsoft Fabric that captures, transforms, and routes real-time events to various destinations. You can add event data sources, destinations, and transformations to the eventstream.
+This is an illustration of how data is ingested so as to emit a stream of events related to observations of water properties such as water levels, pressure and extent of salinity.
+The following is a step-by-step procedure;
+                                                          Creation of an Eventstream
+1.	In the main page of your KQL database, we selected Get data.
+2.	For the data source, we selected Eventstream > New eventstream.  We named the Eventstream as Pipe-data.
+The creation of your new event stream in the workspace will be completed in just a few moments. Once established, you will be automatically redirected to the primary editor, ready to begin integrating sources into your event stream.
+ 
+Adding  a source
+1.	In the Eventstream canvas, we selected Use sample data.
+2.	We named the source as PipeID, and selected the Pipe sample data.
+The stream was mapped and the eventstream canvas was automatically displayed as is shown below; 
+ 
+
+                                                              Addition of a destination
+1.	We selected the Transform events or add destination tile and then we searched for Eventhouse.
+2.	In the Eventhouse pane, we configured the following setup options.
+o	Data ingestion mode: Event processing before ingestion
+o	Destination name: pipes-table
+o	Workspace: We select the workspace that we created at the beginning of this project
+o	Eventhouse: We select the eventhouse
+o	KQL database: We select the KQL database
+o	Destination table: We created a new table named pipes
+o	Input data format: JSON
+ 
+3.	In the Eventhouse pane, we selected Save.
+4.	On the toolbar, we selected Publish.
+5.	We wait a minute or so for the data destination to become active. Then we selected the pipes-table node in the design canvas and viewed the Data preview pane underneath to see the latest data that has been ingested:
+ 
+6.	We waited a few minutes and then used the Refresh button to refresh the Data preview pane. The stream is running perpetually, so new data may have been added to the table.
+7.	Beneath the eventstream design canvas, we viewed the Data insights tab to see details of the data events that have been captured.
+                                                               Query captured data
+The eventstream that we created takes data from the sample source of data of pipe such as pressure and salinity and loads it into the database in the eventhouse. We could analyze the captured data by querying the table in the database.
+1.	In the menu bar on the left, we selected the KQL database.
+2.	On the database tab, in the toolbar for the KQL database, we used the Refresh button to refresh the view until we were able to see the pipe table under the database. Then we selected the pipes table.
+ 
+3.	In the menu for the pipes table, we selected Query table > Records ingested in the last 24 hours.
+4.	In the query pane, note that the following query has been generated and run, with the results shown beneath:
+Code;
+ // See the most recent data - records ingested in the last 24 hours.
+ pipes
+ | where ingestion time() between (now(-1d) .. now())
+5.	We then selected the query code and run it to see 100 rows of data from the table.
+
+                                                        Transforming the event data
+The data that we have captured is unaltered from the source. The objective is to transform the data in the event stream before loading it into a destination.
+1.	In the menu bar on the left, we selected the Pipe-data eventstream.
+2.	On the toolbar, we selected Edit to edit the eventstream.
+3.	In the Transform events menu, we selected Group by to add a new Group by node to the eventstream.
+4.	We then dragged a connection from the output of the Pipe-data node to the input of the new Group by node Then use the pencil icon in the Group by node to edit it.
+
+5.	Configure out the properties of the Group by settings section:
+o	Operation name: GroupBySalinity
+o	Aggregate type: Select Sum
+o	Field: select No_Pipes. Then select Add to create the function SUM of No_Pipes.
+o	Group aggregations by (optional): Salinity
+o	Time window: Tumbling
+o	Duration: 5 seconds
+o	Offset: 0 seconds
+Note: This configuration will cause the eventstream to calculate the total number of Pipes in each street every 5 seconds.
+6.	We saved the configuration and then returned to the eventstream canvas, where an error is indicated (because we needed to store the output from the transformation somewhere).
+7.	We used the + icon to the right of the GroupBySalinity node to add a new Eventhouse node.
+8.	We configured the new eventhouse node with the following options:
+o	Data ingestion mode: Event processing before ingestion
+o	Destination name: pipes-by-salinity-table
+o	Workspace: We selected the workspace created at the beginning of this exercise
+o	Eventhouse: We selected the eventhouse
+o	KQL database: We selected the KQL database
+o	Destination table: We created a new table named pipes-by-street
+o	Input data format: JSON
+ 
+9.	In the Eventhouse pane, we selected Save.
+10.	On the toolbar, we selected Publish.
+11.	We waited for a minute or so for the changes to become active.
+12.	In the design canvas, we selected the pipes-by-salinity-table node, and viewed the data preview pane beneath the canvas.
+ 
+Please note that the transformed data includes the grouping field that was specified (Salinity), the aggregation specified (SUM_no_pipes), and a timestamp field indicating the end of the 5 second tumbling window in which the event occurred (Window_End_Time).
+                                                           Querying the transformed data
+In this section we query the pipe data that has been transformed and loaded into a table by the eventstream
+1.	In the menu bar on the left, we selected the KQL database.
+2.	On the database tab, in the toolbar for your KQL database, we used the Refresh button to refresh the view we saw the pipes-by-salinity table under the database.
+3.	In the … menu for the pipes-by-salinity table, we selected Query data > Show any 100 records.
+4.	In the query pane, the following query is generated and run:
+Code;
+ ['pipes-by-salinity']
+ | take 100
+5.	We modified the KQL query so as to retrieve the total number of pipes per salinity within each 5 second window:
+Code; 
+ ['pipes-by-salinity']
+ | summarize TotalPipes = sum(tolong(SUM_No_Pipes)) by Window_End_Time, Salinity
+ | sort by Window_End_Time desc, Salinity asc
+6.	Finally, we selected the modified query and run it.
+The results show the number of pipes which have traces of salt content in the water (salinity) within each 5 second time period.
+ 
+
+
+Use of Dataflows (Gen2) in Microsoft Fabric for inventory management of equipment for water technology
+In Microsoft Fabric, Dataflows (Gen2) connect to various data sources and perform transformations in Power Query Online. They can then be used in Data Pipelines to ingest data such as inventory of equipment used for water extraction such as pumps, into a lakehouse or other analytical store, or to define a dataset for a Power BI report.
+Creation of a Dataflow (Gen2) to ingest data
+Now that we have a lakehouse, we ingested some data into it. One way to do this is to define a dataflow that encapsulates an extract, transform, and load (ETL) process.
+1.	In the home page for the workspace, we selected Get data > New Dataflow Gen2. After a few seconds, the Power Query editor for the new dataflow opens as shown here.
+ 
+1.	We selected Import from a CSV file, and created a new data source with the following settings:
+o	Link to file: Selected
+o	File path: https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv
+o	Connection: Created a new connection
+o	data gateway: (none)
+o	Authentication kind: Anonymous
+2.	We selected Next to preview the file data, and then Create the data source. The data source is for a water manufacturing company that tracks sales of equipment such as pumps or pipes. The Power Query editor shows the data source and an initial set of query steps to format the data, as shown here:
+ 
+1.	On the toolbar ribbon, we selected the Add column tab. Then we selected Custom column and created a new column.
+2.	We set the New column name to MonthNo , set the Data type to Whole Number and then add the following formula: Date.Month([OrderDate]) - as shown here:
+ 
+1.	We selected OK to create the column and noticed how the step to add the custom column is added to the query. The resulting column is displayed in the data pane:
+ 
+In the Query Settings pane on the right side, the Applied Steps include each transformation step. At the bottom, a water engineer can also toggle the Diagram flow button to turn on the Visual Diagram of the steps. This feature creates a visualization of the procedures taken which makes it easier to understand how the column was generated.
+Steps can be moved up or down, edited by selecting the gear icon, and you can select each step to see the transformations apply in the preview pane.
+1.	We checked and confirmed that the data type for the OrderDate column is set to Date and the data type for the newly created column MonthNo is set to Whole Number.
+                                                 Adding a data destination for Dataflow
+1.	On the toolbar ribbon, we selected the Home tab. Then in the Add data destination drop-down menu, we selected Lakehouse.
+2.	In the Connect to data destination dialog box, we edited the connection and sign in using a Power BI organizational account to set the identity that the dataflow uses to access the lakehouse.
+ 
+1.	We selected Next and in the list of available workspaces, we found the workspace and selected the lakehouse created in it at the start of this project. Then we specified a new table named orders:
+ 
+2.	We selected  Next and on the Choose destination settings page, we disabled the Use automatic settings option, then we selected Append and then Save settings.
+We preferred using the Power query editor for updating data types, additionally we can update from the page below.
+ 
+3.	On the Menu bar, we opened View and selected Diagram view. Based on the image below the Lakehouse destination is indicated as an icon in the query in the Power Query editor.
+ 
+4.	We selected Publish to publish the dataflow. Eventually the Dataflow 1 dataflow was created in the workspace.
+                                                          Adding a dataflow to a pipeline
+So as to ease inventory management of equipment used by water engineers, we decided to include a dataflow as an activity in a pipeline.
+ Pipelines are used to orchestrate data ingestion and processing activities, enabling you to combine dataflows with other kinds of operation in a single, scheduled process. Pipelines can be created in a few different experiences, including Data Factory experience.
+The following are steps to follow;
+1.	From your Fabric-enabled workspace, make sure you’re still in the Data Engineering experience. Select + New item > Data pipeline, then when prompted, create a new pipeline named Load data.
+The pipeline editor opens.
+ 
+2.	Select Add pipeline activity, and add a Dataflow activity to the pipeline.
+3.	With the new Dataflow1 activity selected, on the Settings tab, in the Dataflow drop-down list, select Dataflow 1 (the data flow you created previously)
+ 
+4.	On the Home tab, save the pipeline using the 🖫 (Save) icon.
+5.	Use the ▷ Run button to run the pipeline, and wait for it to complete. It may take a few minutes.
+ 
+6.	In the menu bar on the left edge, select your lakehouse.
+7.	In the … menu for Tables, select refresh. Then expand Tables and select the orders table, which has been created by your dataflow.
+ 
+It is evident that In Power BI Desktop, a water engineer can connect directly to the data transformations done the dataflow by using the Power BI dataflows (Legacy) connector.
+Moreover, additional transformations could be made, publishing as a new dataset, and distribution with intended audience for specialized datasets such as compliance reports of engineering practices related to water.
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   Use of Real-Time Intelligence in Microsoft Fabric
+Microsoft Fabric provides Real-Time Intelligence, enabling the creation of analytical solutions for real-time data streams. In this section, Real-Time Intelligence capabilities in Microsoft Fabric would be used to ingest, analyze, and visualize a real-time stream of external factors such as fluctuation of temperature, carbon emissions which mostly affect water extraction especially for water boreholes.
+The goal is to;
+1.	create an eventhouse
+2.	ingest real-time data using an eventstream
+3.	querying the ingested data in a KQL database table
+4.	creating a real-time dashboard to visualize the real-time data
+5.	configuring an alert using Activator.
+                                                                Creation of an eventstream
+The objective is to find and ingest real-time data from a streaming source. To do this, we started in the Fabric Real-Time Hub.
+
+1.	In the menu bar on the left, we selected the Real-Time hub.
+The real-time hub provides an easy way to find and manage sources of streaming data.
+ 
+2.	In the real-time hub, in the Connect to section, we select Data sources.
+3.	We selected the External factors sample data source and selected Connect. Then in the Connect wizard, we named the source as external factors and edited the default eventstream name to change it to external-data. The default stream associated with this data will automatically be named external-data-stream:
+ 
+4.	We then selected Next and waited for the source and eventstream to be created, then selected Open eventstream. The eventstream will show the external factors source and the external-data-stream on the design canvas:
+ 
+                                                          Creation of an eventhouse
+The eventstream ingests the real-time information about external factors that affect water production, but doesn’t currently do anything with it.  The objective is creation of  an eventhouse where we can store the captured data in a table.
+1.	On the menu bar on the left, we selected Create. In the New page, under the Real-Time Intelligence section, we select Eventhouse. 
+ 
+2.	In the pane on the left, please note that the eventhouse contains a KQL database with the same name as the eventhouse. A water engineer can create tables for real-time data in this database, or create additional databases as necessary.
+3.	We selected the database, and noted that there is an associated queryset. This file contains some sample KQL queries that we can use to get started querying the tables in the database.
+4.	In the main page of the KQL database, we selected Get data.
+5.	For the data source, we selected Eventstream > Existing eventstream.
+6.	In the Select or create a destination table pane, we created a new table named external factors. Then in the Configure the data source pane, we selected the workspace and the external-data eventstream and named the connection stock-table.
+ 
+7.	We used the Next button to complete the steps to inspect the data and then finish the configuration. Then closed the configuration window to see the eventhouse with the external table.
+ 
+Based on the image above the connection between the stream and the table has been created. The next step is to verify that in the eventstream.
+8.	In the menu bar on the left, we selected the Real-Time hub and then view the My data streams page. In the … menu for the external-data-stream stream, we selected Open eventstream.
+The eventstream now shows a destination for the stream:
+ 
+In this section, we have created a very simple eventstream that captures real-time data and loads it into a table. 
+In a real-world situation, water engineers would typically add transformations to aggregate the data over temporal windows (for example, to capture the average temperature of each external factor over five-minute periods).
+The next section illustrates how to query and analyze the captured data.
+                                                                 Querying the captured data
+The eventstream captures real-time data regarding temperature and ground motion (by use of a Richter scale) then it is loaded into a table in the KQL database. We will now query this table to see the captured data.
+1.	In the menu bar on the left, we selected the eventhouse database.
+2.	We selected the queryset for the database.
+3.	In the query pane, we modified the first example query as shown here:
+Code;
+ external factors
+ | take 100
+4.	We selected the query code and run it to see 100 rows of data from the table.
+ 
+5.	We reviewed the results, then modified the query to retrieve the average price for each equipment symbol in the last 5 minutes:
+Code;
+ Equipment
+ | where ["time"] > ago(5m)
+ | summarize avgTemperature = avg(todecimal(equipment)) by symbol
+ | project symbol, avgTemperature
+6.	We highlighted the modified query and run it to see the results.
+7.	After run it again, it is evident that the average temperature changes as new data is added to the table from the real-time stream.
+        Creation of a real-time dashboard for examining external factors that affect water production
+Now that you we have a table that is being populated by stream of data, we could use a real-time dashboard to visualize the data.
+1.	In the query editor, we selected the KQL query you used to retrieve the average stock prices for the last five minutes.
+2.	On the toolbar, we selected Pin to dashboard. Then pin the query in a new dashboard with the following settings:
+o	Dashboard name: External factors dashboard
+o	Tile name: Average Temperature
+3.	Once the dashboard is created it appeared as shown below; 
+ 
+4.	At the top of the dashboard, we switched from Viewing mode to Editing mode.
+5.	We select the Edit (pencil) icon for the Average Temperature tile.
+6.	In the Visual formatting pane, we changed the Visual from Table to Column chart:
+ 
+7.	At the top of the dashboard, we selected Apply changes and viewed the modified dashboard:
+
+Water engineers could use this live visualization of   real-time factors that could affect water production from boreholes.
+                                                                    Creation of alerts
+Real-Time Intelligence in Microsoft Fabric includes a technology named Activator, which can trigger actions based on real-time events.  This could be used by water engineers to alert when their high temperature or presence of earthquakes which have a Richter value of more than 4.
+1.	In the dashboard window containing the external factor visualization, in the toolbar, we selected Set alert.
+2.	In the Set alert pane, we created an alert with the following settings:
+o	Run query every: 5 minutes
+o	Check: On each event grouped by
+o	Grouping field: symbol
+o	When: avgTemperature
+o	Condition: Increases by
+o	Value: 4
+o	Action: Send me an email
+ 
+
+                                                      GitHub integration
+To support continuous integration, it would be preferable if water engineers could merge code changes into a shared repository. The shared repository is part of a version control system like GitHub or Azure DevOps. Version control is a way of managing changes to code over time. It lets you track code revisions, contribute collaboratively to code development, and revert to prior versions of code if needed.
+GitHub and Azure DevOps are the version control systems that are supported in Fabric. These version control systems could allow water engineers to create a copy of a code repository that's called a branch. You can use the branch to work on your own code independently from the main version of your team's code. When you have changes to submit, you can commit them to the repository and merge your changes with a main code branch.
+Integration with version control is at the workspace level in Microsoft Fabric. 
+                                         Connect to a Git Repository
+A Fabric workspace is shared environment that accesses live items. Any changes made directly in the workspace overrides and affect all other workspace users. A best practice is for you to develop in an isolated workspace, outside of a shared, live workspace. In your own protected workspace, you can connect to your own branch and sync content from the live workspace into your protected workspace, and then commit your changes back to your branch or the main branch.
+1.	Set up a git repository: The first step in implementing Git integration is to set up a Git repository in either GitHub or Azure DevOps. The repository is the central location for storing and managing items.
+2.	Connect a Fabric workspace to a Git repository: Next, within the workspace that you want to connect to your repository, establish a connection to the repository from the Git integration option in workspace settings.
+ 
+When you connect a workspace to Git, you create or select an existing a Git repository branch to sync with. Fabric syncs the content between the workspace and Git so they have the same content.
+ 
+                                       Commit and update the Fabric workspace and Git repository
+After you connect to the repository, the workspace shows a Git status column indicating the sync state of items in the workspace, compared to the items in the remote branch.
+The source control icon shows the number of items that are different between the workspace and the repository.
+To synchronize the workspace and repository:
+•	When a water engineer makes workspace changes, they are synchronized with the Git branch using the Changes selection in the Source control window.
+•	When new commits are made in the Git branch, a water engineer could synchronize them with the workspace using the Updates selection in the Source control window.
+ 
+                                                            Branching scenarios
+Changes that you make to a workspace when you're doing development work affect all other workspace users so it's a best practice to work in isolation outside of shared workspaces. To keep your development work isolated from shared workspaces, you can develop using:
+•	A separate, isolated workspace
+•	Client tools like Power BI Desktop for reports and semantic models or VS Code for Notebooks.
+In both scenarios, your feature development work should take place in a dedicated branch instead of the main code branch. This makes it easy for multiple developers to work on a feature without affecting the main branch.
+                          Create a dedicated branch, issue pull requests and sync a workspace with Git
+Create a dedicated branch and issue pull requests to pull changes from your branch into the main branch by following these steps:
+For development using a separate, isolated workspace:
+1.	Connect a development workspace to the main branch, following the instructions in the section on this page entitled "Connect to a Git Repository".
+2.	If you're a developer who works in the Fabric web interface, create an isolated branch for your work from the development workspace that's connected to the main branch by selecting Source control and Branch out to new workspace. Name the branch and associate it with another workspace. The new workspace syncs with the main branch and become an isolated work environment for your work.
+ 
+3.	Makes changes in your branch, then commit them to your isolated branch via the Source control interface in Fabric.
+4.	Then, in Git, create a Pull Request (PR) to pull the changes from your isolated branch into the main branch.
+5.	The main branch in Git will be updated once the PR is merged to the main branch. When you open the shared development workspace, you'll be prompted to synchronize the new content from Git with the shared development workspace.
+When using client tools for development, the process is similar to that when developing in the Fabric web interface.
+1.	Connect a development workspace to the main branch, following the instructions in the section on this page entitled "Connect a Fabric workspace to a Git repository".
+2.	Clone the repository on your local machine.
+3.	Push the changes to the remote repository when you're ready to test in Fabric. Test the changes by connecting your isolated branch to a separate workspace.
+4.	Issue a PR in Git to merge your changes into the main branch.
+5.	When you open the shared workspace associated with the main branch, you'll be prompted to sync the changes from the repository into the workspace.
+
+                                                        Use of GitHub Copilot for Azure 
+
+ 
+The purpose of using GitHub copilot is so as to streamline the process of developing for by utilizing Azure resources. A water engineer could ask @azure questions about Azure services or get help with tasks related to Azure and developing for Azure, all from within Visual Studio Code.
+As is evident by the image below, @azure can help diagnose problems with services, such as Azure API Management, Azure Cache for Redis, Azure Container Apps, Azure Functions, Azure Kubernetes Services, and the Web Apps feature of Azure App Service.
+ 
+
+
+Moreover, based on the image below, @azure can help a water engineer to search for application templates and will provide instructions for how to initialize, configure and deploy.
+ 
+
+
+
+Use Microsoft Fabric Activator to offer alerts on factors that could affect water extraction
+When monitoring surfaces changing data, anomalies, or critical events, alerts are generated or actions are triggered. Real-time data analytics is commonly based on the ingestion and processing of a data stream that consists of a perpetual series of data, typically related to specific point-in-time events. 
+For example, a stream of data from an environmental IoT weather sensor. Real-Time Intelligence in Fabric contains a tool called Activator that can be used to trigger actions on streaming data. For example, a stream of data from an environmental IoT weather sensor might be used to trigger emails to sailors when temperature thresholds are met.
+ When certain conditions or logic is met, an action is taken, like alerting users, executing Fabric job items like a pipeline, or kicking off Power Automate workflows. The logic can be either a defined threshold, a pattern like events happening repeatedly over a time period, or the results of logic defined by a Kusto Query Language (KQL) query.
+What is Activator
+Activator is a technology in Microsoft Fabric that enables automated processing of events that trigger actions. For example, you can use Activator to notify you by email when a value in an eventstream deviates from a specific range or to run a notebook to perform some Spark-based data processing logic when a real-time dashboard is updated.
+
+
+Understand Activator key concepts
+Activator operates based on four core concepts: Events, *Objects, Properties, and Rules.
+•	Events - Each record in a stream of data represents an event that has occurred at a specific point in time.
+•	Objects - The data in an event record can be used to represent an object, such as a sales order of equipment used by water engineers, a sensor, or some other business entity.
+•	Properties - The fields in the event data can be mapped to properties of the business object, representing some aspect of its state. For example, a temperature field might represent the temperature measured by an environmental sensor.
+•	Rules - The key to using Activator to automate actions based on events is to define rules that set conditions under which an action is triggered based on the property values of objects referenced in events. For example, you might define a rule that sends an email to a maintenance manager if the temperature measured by a sensor exceeds a specific threshold.
+Use cases for Activator
+Activator can help you in various scenarios, such as dynamic inventory management, real-time customer engagement, and effective resource allocation in cloud environments. It's a potent tool for any circumstance that requires real-time data analysis and actions.
+Water engineers could use Microsoft Activator to:
+•	Send notifications when temperature changes could affect perishable goods.
+•	Flag real-time issues affecting the user experience on apps and websites.
+•	Trigger alerts when a shipment hasn't been updated within an expected time frame.
+•	Respond to anomalies or failures in data processing workflows immediately.
+
+
+                                               Monitor Fabric activity in the monitoring hub
+The monitoring hub in Microsoft Fabric provides a central place where you can monitor activity. You can use the monitoring hub to review events related to items you have permission to view.
+                                                             Creation of a workspace
+1.	In the menu bar on the left, select Workspaces (the icon looks similar to 🗇).
+2.	Create a new workspace with a name of your choice, selecting a licensing mode in the Advanced section that includes Fabric capacity (Trial, Premium, or Fabric).
+3.	When your new workspace opens, it should be empty.
+ 
+                                                    Creation of a lakehouse
+Now that we have a workspace, it’s time to create a data lakehouse for the data.
+1.	On the menu bar on the left, we selected Create. In the New page, under the Data Engineering section, we selected Lakehouse..
+ 
+2.	View the new lakehouse, and note that the Lakehouse explorer pane on the left enables you to browse tables and files in the lakehouse:
+
+                                                         Creation and monitoring of a Dataflow
+In Microsoft Fabric, we have used a Dataflow (Gen2) to ingest data from a wide range of sources. In this section, we will use a dataflow to get data from a CSV file and load it into a table in the  lakehouse.
+1.	On the Home page for the lakehouse, in the Get data menu, we select New Dataflow Gen2.
+A new dataflow named Dataflow 1 is created and opened.
+ 
+2.	At the top left of the dataflow page, we selected Dataflow 1 to see its details and rename the dataflow to Get Product Data.
+3.	In the dataflow designer, we selected Import from a Text/CSV file.  Then completed the Get Data wizard to create a data connection. When we completed the wizard, a preview of the data will be shown in the dataflow designer like this:
+ 
+4.	The dataflow is then published
+5.	In the navigation bar on the left, we selected Monitor to view the monitoring hub and observed that the dataflow is in-progress.
+ 
 6.	We waited for a few seconds, and then refreshed the page until the status of the dataflow is Succeeded.
 7.	In the navigation pane, we selected the lakehouse. Then we expanded the Tables folder to verify that a table named equipment has been created and loaded by the dataflow.
+
